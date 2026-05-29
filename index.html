@@ -1,186 +1,442 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha IA - Offline</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a001f">
+    <title>DiamanteBlack 💎</title>
     <style>
-        :root { 
-            --bg: #0b141a; --header: #202c33; --bubble-in: #202c33; 
-            --bubble-out: #005c4b; --text: #e9edef; --accent: #00a884; 
-        }
-        * { box-sizing: border-box; }
-        body { 
-            font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); 
-            margin: 0; height: 100vh; display: flex; flex-direction: column; 
-        }
-        header { 
-            background: var(--header); padding: 12px 15px; display: flex; 
-            justify-content: space-between; align-items: center; 
-        }
-        header h1 { font-size: 16px; margin: 0; }
-        #status { font-size: 11px; color: #8696a0; margin: 3px 0 0; }
-        #progress { height: 3px; background: #111b21; }
-        #progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; }
-        #chat { 
-            flex: 1; overflow-y: auto; padding: 15px; display: flex; 
-            flex-direction: column; gap: 8px; scroll-behavior: smooth; 
-        }
-        .msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; line-height: 1.4; word-wrap: break-word; }
-        .msg.in { background: var(--bubble-in); align-self: flex-start; border-bottom-left-radius: 4px; }
-        .msg.out { background: var(--bubble-out); align-self: flex-end; border-bottom-right-radius: 4px; }
-        .msg.thinking { font-style: italic; color: #8696a0; }
-        #input-area { 
-            background: var(--header); padding: 10px 15px; display: flex; gap: 8px; 
-        }
-        #msg-input { 
-            flex: 1; padding: 12px; border-radius: 20px; border: none; 
-            background: #2a3942; color: var(--text); font-size: 14px; outline: none; 
-        }
-        #send-btn { 
-            padding: 12px 20px; border-radius: 20px; border: none; 
-            background: var(--accent); color: #000; font-weight: 600; 
-        }
-        #send-btn:disabled { background: #37474f; color: #8696a0; }
-        #model-select { 
-            font-size: 11px; padding: 4px 8px; border-radius: 4px; 
-            background: #111b21; color: var(--text); border: 1px solid #37474f; 
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        body { background: linear-gradient(135deg, #0a001f 0%, #1a0033 100%); color: #ECEDEE; display: flex; flex-direction: column; }
+        .screen { display: none; flex-direction: column; height: 100%; width: 100%; padding: 20px; padding-top: max(20px, env(safe-area-inset-top)); padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+        .screen.active { display: flex; }
+        .auth-screen { align-items: center; justify-content: center; }
+        .auth-card { background: rgba(10, 0, 31, 0.8); border: 2px solid #00f0ff; border-radius: 20px; padding: 30px; width: 100%; max-width: 350px; box-shadow: 0 0 40px rgba(0, 240, 255, 0.2); }
+        .auth-card h1 { font-size: 28px; color: #00f0ff; margin-bottom: 10px; text-align: center; }
+        .auth-card p { text-align: center; color: #9BA1A6; margin-bottom: 20px; font-size: 13px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; color: #9BA1A6; margin-bottom: 5px; }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px 14px; background: rgba(30, 32, 34, 0.8); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 10px; color: #ECEDEE; font-size: 14px; outline: none; transition: all 0.3s; }
+        input:focus { border-color: #00f0ff; box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); }
+        .toggle-password { position: absolute; right: 12px; background: none; border: none; color: #9BA1A6; cursor: pointer; font-size: 16px; padding: 0; width: auto; }
+        .btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #00f0ff 0%, #0099cc 100%); color: #000; border: none; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; margin-top: 10px; }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
+        .btn.secondary { background: rgba(0, 240, 255, 0.1); color: #00f0ff; border: 1px solid #00f0ff; }
+        .toggle-form { text-align: center; margin-top: 15px; font-size: 12px; color: #9BA1A6; }
+        .toggle-form button { background: none; border: none; color: #00f0ff; cursor: pointer; text-decoration: underline; font-size: 12px; padding: 0; }
+        .chat-screen { flex-direction: column; }
+        .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0, 240, 255, 0.2); margin-bottom: 10px; }
+        .header-title { display: flex; align-items: center; gap: 8px; }
+        .header-title h1 { font-size: 18px; color: #00f0ff; }
+        .model-status { font-size: 11px; color: #9BA1A6; padding: 4px 8px; background: rgba(0, 240, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.2); }
+        .model-status.ready { color: #00ff00; border-color: #00ff00; background: rgba(0, 255, 0, 0.1); }
+        .header-buttons { display: flex; gap: 8px; }
+        .icon-btn { background: none; border: 1px solid rgba(0, 240, 255, 0.3); color: #00f0ff; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .icon-btn:active { background: rgba(0, 240, 255, 0.1); }
+        .chat-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 10px 0; -webkit-overflow-scrolling: touch; }
+        .message { display: flex; gap: 8px; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { justify-content: flex-end; }
+        .message-bubble { max-width: 85%; padding: 12px 14px; border-radius: 14px; word-wrap: break-word; line-height: 1.4; font-size: 14px; position: relative; }
+        .message.bot .message-bubble { background: rgba(0, 240, 255, 0.12); border: 1px solid rgba(0, 240, 255, 0.3); color: #ECEDEE; }
+        .message.user .message-bubble { background: linear-gradient(135deg, #00f0ff 0%, #0099cc 100%); color: #000; font-weight: 500; }
+        .message-footer { display: flex; gap: 6px; margin-top: 6px; font-size: 11px; opacity: 0.7; }
+        .msg-btn { background: none; border: 1px solid rgba(0, 240, 255, 0.3); color: #9BA1A6; padding: 3px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; transition: all 0.2s; }
+        .msg-btn:active { color: #00f0ff; border-color: #00f0ff; }
+        .agent-label { font-size: 10px; color: #00f0ff; font-weight: 600; text-transform: uppercase; }        .thinking { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #9BA1A6; font-style: italic; }
+        .dot { width: 4px; height: 4px; background: #00f0ff; border-radius: 50%; animation: blink 1.4s infinite; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
+        .input-area { display: flex; gap: 8px; padding: 12px 0; border-top: 1px solid rgba(0, 240, 255, 0.2); align-items: flex-end; }
+        .input-box { flex: 1; display: flex; gap: 6px; background: rgba(30, 32, 34, 0.8); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 10px; padding: 8px 10px; align-items: center; }
+        textarea { flex: 1; background: none; border: none; color: #ECEDEE; font-size: 14px; outline: none; resize: none; max-height: 100px; font-family: inherit; min-height: 40px; }
+        textarea::placeholder { color: #687076; }
+        .send-btn { background: linear-gradient(135deg, #00f0ff 0%, #0099cc 100%); color: #000; border: none; border-radius: 8px; width: 40px; height: 40px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 600; transition: all 0.2s; flex-shrink: 0; }
+        .send-btn:active { transform: scale(0.95); opacity: 0.8; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal.active { display: flex; }
+        .modal-content { background: rgba(10, 0, 31, 0.95); border: 2px solid #00f0ff; border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
+        .modal-content h2 { color: #00f0ff; margin-bottom: 15px; font-size: 16px; }
+        .model-item { background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+        .model-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+        .model-name { color: #00f0ff; font-weight: 600; }
+        .model-status-text { font-size: 11px; color: #9BA1A6; }
+        .progress-bar { height: 3px; background: rgba(0, 240, 255, 0.1); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #00f0ff, #0099cc); width: 0%; transition: width 0.2s; }
+        .model-btn { width: 100%; padding: 8px; background: rgba(0, 240, 255, 0.1); color: #00f0ff; border: 1px solid #00f0ff; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .model-btn:active { background: rgba(0, 240, 255, 0.2); }
+        .model-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .danger-btn { background: rgba(255, 68, 68, 0.1); color: #ff4444; border-color: #ff4444; margin-top: 10px; }
+        .close-btn { width: 100%; padding: 10px; background: rgba(0, 240, 255, 0.1); color: #00f0ff; border: 1px solid #00f0ff; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.5); }
+        @media (max-width: 480px) { .auth-card { padding: 20px; } .message-bubble { font-size: 13px; max-width: 90%; } .header-title h1 { font-size: 16px; } }
     </style>
-</head><body>
-
-<header>
-    <div>
-        <h1>✨ Minha IA</h1>
-        <p id="status">Carregando motor...</p>
+</head>
+<body>
+    <!-- LOGIN -->
+    <div class="screen auth-screen active" id="loginScreen">
+        <div class="auth-card">
+            <h1>💎 DiamanteBlack</h1>
+            <p>IA Ultra-Leve para Celular</p>
+            <div class="form-group">
+                <label>Email</label>
+                <div class="input-wrapper">
+                    <input type="email" id="loginEmail" placeholder="seu@email.com" value="user@diamante.ai">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <div class="input-wrapper">
+                    <input type="password" id="loginSenha" placeholder="Senha" value="123456">
+                    <button class="toggle-password" onclick="togglePassword('loginSenha')">👁️</button>                </div>
+            </div>
+            <button class="btn" onclick="fazerLogin()">ENTRAR</button>
+            <div class="toggle-form">Não tem conta? <button onclick="mostrarRegistro()">Registre-se</button></div>
+        </div>
     </div>
-    <select id="model-select">
-        <option value="TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC">TinyLlama 1.1B (leve)</option>
-        <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen2.5 1.5B (equilíbrio)</option>
-        <option value="Llama-3-8B-Instruct-q4f16_1-MLC" disabled>Llama-3 8B (pesado)</option>
-    </select>
-</header>
 
-<div id="progress"><div id="progress-bar"></div></div>
+    <!-- REGISTRO -->
+    <div class="screen auth-screen" id="registroScreen">
+        <div class="auth-card">
+            <h1>💎 Criar Conta</h1>
+            <p>Junte-se ao DiamanteBlack</p>
+            <div class="form-group">
+                <label>Nome</label>
+                <input type="text" id="registroNome" placeholder="Seu nome">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="registroEmail" placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <div class="input-wrapper">
+                    <input type="password" id="registroSenha" placeholder="Crie uma senha">
+                    <button class="toggle-password" onclick="togglePassword('registroSenha')">👁️</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Confirmar Senha</label>
+                <div class="input-wrapper">
+                    <input type="password" id="registroSenha2" placeholder="Confirme a senha">
+                    <button class="toggle-password" onclick="togglePassword('registroSenha2')">👁️</button>
+                </div>
+            </div>
+            <button class="btn" onclick="fazerRegistro()">REGISTRAR</button>
+            <div class="toggle-form">Já tem conta? <button onclick="mostrarLogin()">Faça login</button></div>
+        </div>
+    </div>
 
-<div id="chat">
-    <div class="msg in">👋 Olá! Escolha um modelo leve e aguarde carregar.</div>
-</div>
+    <!-- CHAT -->
+    <div class="screen chat-screen" id="chatScreen">
+        <div class="header">
+            <div class="header-title">
+                <h1>💎 DiamanteBlack</h1>
+                <div class="model-status" id="modelStatus">Carregando...</div>
+            </div>
+            <div class="header-buttons">
+                <button class="icon-btn" onclick="abrirConfig()" title="Configurações">⚙️</button>
+                <button class="icon-btn" onclick="fazerLogout()" title="Sair">🚪</button>
+            </div>        </div>
+        <div class="chat-area" id="chatArea"></div>
+        <div class="input-area">
+            <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Arquivo">📎</button>
+            <button class="icon-btn" onclick="iniciarVoz()" id="micBtn" title="Voz">🎤</button>
+            <div class="input-box">
+                <textarea id="msgInput" placeholder="Mensagem..." onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); enviarMsg(); }"></textarea>
+            </div>
+            <button class="send-btn" onclick="enviarMsg()" title="Enviar">➤</button>
+            <input type="file" id="fileInput" multiple style="display:none;" onchange="processarArquivos()">
+        </div>
+    </div>
 
-<div id="input-area">
-    <input type="text" id="msg-input" placeholder="Digite sua mensagem..." disabled>
-    <button id="send-btn" disabled>Enviar</button>
-</div>
+    <!-- MODAL CONFIGURAÇÕES -->
+    <div class="modal" id="modalConfig">
+        <div class="modal-content">
+            <h2>⚙️ Configurações</h2>
+            <div class="model-item">
+                <div class="model-header">
+                    <span class="model-name">✨ SmolLM-135M</span>
+                    <span class="model-status-text" id="statusText">Pendente</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+                <button class="model-btn" id="downloadBtn" onclick="baixarModelo()">BAIXAR</button>
+            </div>
+            <button class="model-btn danger-btn" onclick="limparChat()">🗑️ LIMPAR CHAT</button>
+            <button class="close-btn" onclick="fecharConfig()">FECHAR</button>
+        </div>
+    </div>
 
-<script type="module">
-    // === SUA INTERFACE, SEU CONTROLE ===
-    const UI = {
-        chat: document.getElementById('chat'),
-        input: document.getElementById('msg-input'),
-        btn: document.getElementById('send-btn'),
-        progress: document.getElementById('progress-bar'),
-        status: document.getElementById('status'),
-        modelSelect: document.getElementById('model-select'),
-        
-        addMsg(text, type) {
-            const div = document.createElement('div');
-            div.className = `msg ${type}`;
-            div.textContent = text;
-            this.chat.appendChild(div);
-            this.chat.scrollTop = this.chat.scrollHeight;
-            return div;
-        },
-        
-        setLoading(loading) {
-            this.input.disabled = loading;
-            this.btn.disabled = loading;
-            this.btn.textContent = loading ? '...' : 'Enviar';
+    <script type="module">
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+        env.allowLocalModels = false;
+        env.useBrowserCache = true;
+
+        let model = null;
+        let usuarios = {};
+        let usuarioAtual = null;
+
+        // ===== AUTENTICAÇÃO =====
+        window.togglePassword = (id) => {
+            const input = document.getElementById(id);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        };
+
+        window.mostrarRegistro = () => {
+            document.getElementById('loginScreen').classList.remove('active');            document.getElementById('registroScreen').classList.add('active');
+        };
+
+        window.mostrarLogin = () => {
+            document.getElementById('registroScreen').classList.remove('active');
+            document.getElementById('loginScreen').classList.add('active');
+        };
+
+        window.fazerRegistro = () => {
+            const nome = document.getElementById('registroNome').value.trim();
+            const email = document.getElementById('registroEmail').value.trim();
+            const senha = document.getElementById('registroSenha').value;
+            const senha2 = document.getElementById('registroSenha2').value;
+
+            if (!nome || !email || !senha) { alert('Preencha todos os campos!'); return; }
+            if (senha !== senha2) { alert('Senhas não conferem!'); return; }
+            if (usuarios[email]) { alert('Email já registrado!'); return; }
+
+            usuarios[email] = { nome, senha };
+            localStorage.setItem('usuarios', JSON.stringify(usuarios));
+            alert('Conta criada com sucesso! Faça login.');
+            mostrarLogin();
+        };
+
+        window.fazerLogin = () => {
+            const email = document.getElementById('loginEmail').value.trim();
+            const senha = document.getElementById('loginSenha').value;
+            usuarios = JSON.parse(localStorage.getItem('usuarios') || '{}');
+
+            if (!usuarios[email] || usuarios[email].senha !== senha) { alert('Email ou senha incorretos!'); return; }
+
+            usuarioAtual = email;
+            localStorage.setItem('usuarioAtual', email);
+            document.getElementById('loginScreen').classList.remove('active');
+            document.getElementById('chatScreen').classList.add('active');
+            adicionarMsg('bot', '💎 Bem-vindo ao DiamanteBlack!\n\nBaixe o modelo nas configurações (⚙️) e comece a conversar!');
+            atualizarStatus();
+        };
+
+        window.fazerLogout = () => {
+            if (confirm('Deseja sair?')) {
+                usuarioAtual = null;
+                localStorage.removeItem('usuarioAtual');
+                document.getElementById('chatScreen').classList.remove('active');
+                document.getElementById('loginScreen').classList.add('active');
+                document.getElementById('chatArea').innerHTML = '';
+                model = null;
+                atualizarStatus();
+            }
+        };
+        // ===== MODELO =====
+        function atualizarStatus() {
+            const statusEl = document.getElementById('modelStatus');
+            if (model) {
+                statusEl.textContent = '✅ SmolLM Pronto';
+                statusEl.classList.add('ready');
+            } else {
+                statusEl.textContent = '⏳ Não carregado';
+                statusEl.classList.remove('ready');
+            }
         }
-    };
-    let engine = null;
 
-    // === MOTOR DE TERCEIROS PLUGADO NA SUA INTERFACE ===
-    async function loadEngine(modelId) {
-        try {
-            // Importa o WebLLM (terceiro) - só na primeira vez
-            const { CreateWebWorkerEngine } = await import(
-                'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.46/+esm'
-            );
+        // ✅ CORREÇÃO 1: progress_callback com cálculo real de % (loaded/total)
+        window.baixarModelo = async () => {
+            const btn = document.getElementById('downloadBtn');
+            const statusText = document.getElementById('statusText');
+            const progressBar = document.getElementById('progressBar');
 
-            UI.status.textContent = 'Baixando modelo... (só na 1ª vez)';
-            
-            engine = await CreateWebWorkerEngine(
-                new Worker(
-                    new URL('https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.46/dist/worker.js', import.meta.url), 
-                    { type: 'module' }
-                ),
-                modelId,
-                {
-                    initProgressCallback: (report) => {
-                        UI.progress.style.width = `${report.progress * 100}%`;
-                        UI.status.textContent = report.text;
+            btn.disabled = true;
+            btn.textContent = 'Baixando...';
+            statusText.textContent = 'Conectando...';
+
+            try {
+                model = await pipeline('text-generation', 'Xenova/SmolLM-135M-Instruct', {
+                    dtype: 'q4', // ← Otimização para mobile
+                    progress_callback: (data) => {
+                        if (data.status === 'progress' && data.total > 0) {
+                            const percent = Math.round((data.loaded / data.total) * 100);
+                            progressBar.style.width = percent + '%';
+                            statusText.textContent = `${percent}% • ${data.file || '...'}`;
+                        }
+                        if (data.status === 'ready') {
+                            progressBar.style.width = '100%';
+                            statusText.textContent = '✅ Na memória';
+                            btn.textContent = '✓ CARREGADO';
+                            btn.disabled = true;
+                            atualizarStatus();
+                            adicionarMsg('bot', '🤖 SmolLM-135M pronto! Pode conversar offline.');
+                        }
                     }
+                });
+            } catch (e) {
+                console.error(e);
+                statusText.textContent = '❌ Falha';
+                btn.disabled = false;
+                btn.textContent = 'TENTAR NOVAMENTE';
+                adicionarMsg('bot', `⚠️ Erro: ${e.message}\n\nDica: Use Wi-Fi e tente novamente.`);
+            }
+        };
+        // ===== CHAT =====
+        // ✅ CORREÇÃO 2: envio com parâmetros corretos + tratamento seguro do "thinking"
+        window.enviarMsg = async () => {
+            const input = document.getElementById('msgInput');
+            const texto = input.value.trim();
+            if (!texto) return;
+
+            adicionarMsg('user', texto);
+            input.value = '';
+            input.style.height = 'auto';
+
+            if (!model) {
+                adicionarMsg('bot', '⚠️ Modelo não carregado. Vá em ⚙️ e clique em "BAIXAR".');
+                return;
+            }
+
+            const thinkId = 't-' + Date.now();
+            adicionarMsg('bot', `<div id="${thinkId}" class="thinking"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Pensando...</div>`);
+
+            try {
+                const output = await model(texto, {
+                    max_new_tokens: 128,
+                    temperature: 0.6,
+                    do_sample: true,
+                    top_k: 20,
+                    repetition_penalty: 1.1
+                });
+
+                let resposta = output[0]?.generated_text || '';
+                resposta = resposta.replace(texto, '').trim();
+
+                // ✅ CORREÇÃO 3: substituir conteúdo do thinking, não remover o pai
+                const thinkEl = document.getElementById(thinkId);
+                if (thinkEl) {
+                    thinkEl.className = '';
+                    thinkEl.innerHTML = '';
+                    thinkEl.textContent = resposta || '...';
                 }
-            );
-            
-            UI.status.textContent = '✅ Pronto! Pode conversar.';
-            UI.addMsg('🤖 IA carregada! Estou pronta.', 'in');
-            return true;
-        } catch (err) {
-            console.error(err);
-            UI.status.textContent = '❌ Erro: ' + (err.message || 'Falha ao carregar');
-            UI.addMsg('⚠️ Não foi possível carregar a IA. Tente um modelo mais leve ou verifique sua conexão.', 'in');
-            return false;
+
+            } catch (e) {
+                const thinkEl = document.getElementById(thinkId);
+                if (thinkEl) thinkEl.parentElement?.remove();
+                adicionarMsg('bot', `❌ Erro: ${e.message.slice(0, 100)}...`);
+            }
+        };
+
+        function adicionarMsg(tipo, texto) {
+            const chat = document.getElementById('chatArea');
+            const msgDiv = document.createElement('div');            msgDiv.className = 'message ' + tipo;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.innerHTML = texto; // ← mantém HTML (para animação de loading)
+            msgDiv.appendChild(bubble);
+
+            if (tipo === 'bot') {
+                const footer = document.createElement('div');
+                footer.className = 'message-footer';
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'msg-btn';
+                copyBtn.textContent = 'COPIAR';
+                copyBtn.onclick = () => {
+                    const textoLimpo = bubble.innerText; // ← pega só o texto, sem HTML
+                    navigator.clipboard.writeText(textoLimpo);
+                    copyBtn.textContent = 'COPIADO!';
+                    setTimeout(() => copyBtn.textContent = 'COPIAR', 2000);
+                };
+
+                const speakBtn = document.createElement('button');
+                speakBtn.className = 'msg-btn';
+                speakBtn.textContent = 'OUVIR';
+                speakBtn.onclick = () => {
+                    const utterance = new SpeechSynthesisUtterance(bubble.innerText);
+                    utterance.lang = 'pt-BR';
+                    window.speechSynthesis.speak(utterance);
+                };
+
+                footer.appendChild(copyBtn);
+                footer.appendChild(speakBtn);
+                msgDiv.appendChild(footer);
+            }
+
+            chat.appendChild(msgDiv);
+            chat.scrollTop = chat.scrollHeight;
         }
-    }
 
-    // === SUA LÓGICA DE CHAT ===
-    async function sendMessage() {
-        const text = UI.input.value.trim();
-        if (!text || !engine) return;
+        // ===== VOZ =====
+        window.iniciarVoz = () => {
+            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Speech) { alert('Voz não suportada neste navegador'); return; }
 
-        // Sua mensagem
-        UI.addMsg(text, 'out');
-        UI.input.value = '';
-        UI.setLoading(true);
+            const rec = new Speech();
+            rec.lang = 'pt-BR';
+            rec.continuous = false;
+            rec.interimResults = false;
 
-        // Indicador "pensando"
-        const thinking = UI.addMsg('💭 Pensando...', 'in thinking');
-        try {
-            const response = await engine.chat.completions.create({
-                messages: [{ role: 'user', content: text }],
-                stream: false
-            });
-            
-            const reply = response.choices[0].message.content;
-            thinking.textContent = reply;
-            thinking.classList.remove('thinking');
-        } catch (err) {
-            thinking.textContent = '❌ Erro ao gerar resposta. Tente novamente.';
-            console.error(err);
-        } finally {
-            UI.setLoading(false);
-        }
-    }
+            const micBtn = document.getElementById('micBtn');            rec.onstart = () => { micBtn.style.color = '#ff0000'; };
+            rec.onresult = (e) => { document.getElementById('msgInput').value = e.results[0][0].transcript; };
+            rec.onend = () => { micBtn.style.color = ''; };
+            rec.onerror = (e) => { alert('Erro: ' + e.error); };
+            rec.start();
+        };
 
-    // === EVENTOS DA SUA INTERFACE ===
-    UI.btn.onclick = sendMessage;
-    UI.input.onkeypress = (e) => e.key === 'Enter' && sendMessage();
-    
-    UI.modelSelect.onchange = async () => {
-        const model = UI.modelSelect.value;
-        UI.chat.innerHTML = '';
-        UI.addMsg(`🔄 Carregando ${model}...`, 'in');
-        UI.progress.style.width = '0%';
-        await loadEngine(model);
-    };
+        // ===== ARQUIVOS =====
+        window.processarArquivos = async () => {
+            const files = document.getElementById('fileInput').files;
+            if (files.length === 0) return;
 
-    // === INICIALIZAÇÃO ===
-    // Carrega o modelo leve por padrão
-    window.addEventListener('load', async () => {
-        await loadEngine('TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC');
-    });
-</script>
+            adicionarMsg('bot', '📎 Processando ' + files.length + ' arquivo(s)...');
 
-</body>
-</html>
+            for (let file of files) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const conteudo = e.target.result.substring(0, 500);
+                    adicionarMsg('bot', '✅ Arquivo carregado: ' + file.name + '\n\n' + conteudo + '...');
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        // ===== CONFIG =====
+        window.abrirConfig = () => { document.getElementById('modalConfig').classList.add('active'); };
+        window.fecharConfig = () => { document.getElementById('modalConfig').classList.remove('active'); };
+        window.limparChat = () => {
+            if (confirm('Limpar todo o histórico de chat?')) {
+                document.getElementById('chatArea').innerHTML = '';
+                fecharConfig();
+                adicionarMsg('bot', '🗑️ Chat limpo!');
+            }
+        };
+
+        // ===== INICIALIZAÇÃO =====
+        window.addEventListener('load', () => {
+            const usuarioSalvo = localStorage.getItem('usuarioAtual');
+            usuarios = JSON.parse(localStorage.getItem('usuarios') || '{}');
+
+            if (usuarioSalvo && usuarios[usuarioSalvo]) {
+                usuarioAtual = usuarioSalvo;
+                document.getElementById('loginScreen').classList.remove('active');
+                document.getElementById('chatScreen').classList.add('active');
+                adicionarMsg('bot', '💎 Bem-vindo de volta!');
+                atualizarStatus();
+            }
+        });
+    </script>
+</body></html>
